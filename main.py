@@ -89,7 +89,6 @@ def main() -> None:
         riot_id = get_active_player_riot_id()
         if riot_id:
             print(f"ActiveUserのRiot ID: {riot_id}")
-            speak(f"アクティブユーザーは {riot_id} です")
             try:
                 run_event_commentary_loop(active_riot_id=riot_id)
             except KeyboardInterrupt:
