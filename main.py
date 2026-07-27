@@ -41,6 +41,11 @@ VOICEVOX_SPEAKER_ID = int(os.environ.get("VOICEVOX_SPEAKER_ID", "1"))  # ずん�
 
 POLL_INTERVAL_SECONDS = float(os.environ.get("POLL_INTERVAL_SECONDS", "1.0"))
 
+# 空文字の場合はLLMによる実況生成を行わずテンプレートの実況文をそのまま使用する
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest")
+GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+
 # プレイヤー識別名(summonerName/championName/riotId) -> チーム("ORDER"/"CHAOS")
 player_team_map: dict[str, str] = {}
 
@@ -216,6 +221,37 @@ def build_event_commentary(event: dict) -> str | None:
     return None
 
 
+def enhance_commentary_with_llm(event: dict, base_commentary: str) -> str:
+    """Gemini APIでテンプレートの実況文を言い換えて生成する。未設定/失敗時はテンプレートのまま返す"""
+    if not GEMINI_API_KEY:
+        return base_commentary
+
+    prompt = (
+        "あなたはLeague of Legendsの試合実況アナウンサーです。"
+        "以下の試合イベントについて、盛り上がる短い実況コメントを日本語で1文だけ生成してください。"
+        "前置きや説明文は不要で、実況コメントの本文のみを返してください。\n\n"
+        f"イベント種別: {event.get('EventName')}\n"
+        f"イベント詳細(JSON): {json.dumps(event, ensure_ascii=False)}\n"
+        f"参考(テンプレートの実況文): {base_commentary}"
+    )
+    body = json.dumps({"contents": [{"parts": [{"text": prompt}]}]}).encode("utf-8")
+
+    try:
+        request = urllib.request.Request(
+            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=10) as response:
+            result = json.load(response)
+        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
+        return text or base_commentary
+    except (*_CONNECTION_ERRORS, KeyError, IndexError, json.JSONDecodeError) as e:
+        print(f"Gemini APIでの実況生成に失敗しました。テンプレートの実況を使用します: {e}")
+        return base_commentary
+
+
 def run_event_commentary_loop(poll_interval: float = POLL_INTERVAL_SECONDS) -> None:
     """試合イベントをポーリングし、新しく発生したイベントごとに音声実況を流す"""
     last_event_id = -1
@@ -235,6 +271,7 @@ def run_event_commentary_loop(poll_interval: float = POLL_INTERVAL_SECONDS) -> N
         for event in sorted(new_events, key=lambda e: e.get("EventID", 0)):
             commentary = build_event_commentary(event)
             if commentary:
+                commentary = enhance_commentary_with_llm(event, commentary)
                 print(f"[{event.get('EventName')}] {commentary}")
                 speak(commentary)
             last_event_id = max(last_event_id, event.get("EventID", last_event_id))
