@@ -14,8 +14,7 @@ from config import (
     LOW_HP_RECOVER_RATIO,
     NOTABLE_LEVELS,
 )
-
-TEAM_LABELS = {"ORDER": "ブルー", "CHAOS": "レッド"}
+from live_client_api import team_label
 
 _player_state: dict[str, dict] = {}
 _team_kill_state = {"last_leader": None, "last_step": 0}
@@ -47,7 +46,9 @@ def _player_key(player: dict) -> str:
     return player.get("summonerName") or f"{player.get('championName')}_{player.get('team')}"
 
 
-def detect_player_state_changes(players: list[dict], active_player_key: str | None = None) -> list[str]:
+def detect_player_state_changes(
+    players: list[dict], active_player_key: str | None = None, active_team: str | None = None
+) -> list[str]:
     """プレイヤー単位の状況変化(CS到達・節目レベル・アイテム購入)を検知する
 
     アイテム購入はノイズを避けるため通常は高額品のみ実況するが、active_player_keyと
@@ -94,11 +95,11 @@ def detect_player_state_changes(players: list[dict], active_player_key: str | No
                     comments.append(f"{name}が{item.get('displayName') or 'アイテム'}を購入しました。")
             state["item_ids"] = item_ids
 
-    comments.extend(_detect_kill_gap(players))
+    comments.extend(_detect_kill_gap(players, active_team))
     return comments
 
 
-def _detect_kill_gap(players: list[dict]) -> list[str]:
+def _detect_kill_gap(players: list[dict], active_team: str | None) -> list[str]:
     """チーム間のキル差の拡大・逆転を検知する"""
     team_kills = {"ORDER": 0, "CHAOS": 0}
     for player in players:
@@ -118,15 +119,16 @@ def _detect_kill_gap(players: list[dict]) -> list[str]:
 
     comments = []
     last_leader = _team_kill_state["last_leader"]
+    label = team_label(leader, active_team)
 
     if leader != last_leader:
         if last_leader is not None and gap > 0:
-            comments.append(f"{TEAM_LABELS[leader]}チームが逆転してリードしています!")
+            comments.append(f"{label}チームが逆転してリードしています!")
         _team_kill_state["last_step"] = gap // KILL_GAP_ALERT_STEP
     else:
         step = gap // KILL_GAP_ALERT_STEP
         if step > _team_kill_state["last_step"]:
-            comments.append(f"{TEAM_LABELS[leader]}チームが{gap}キル差でリードしています。")
+            comments.append(f"{label}チームが{gap}キル差でリードしています。")
             _team_kill_state["last_step"] = step
 
     _team_kill_state["last_leader"] = leader

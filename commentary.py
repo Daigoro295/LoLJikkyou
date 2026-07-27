@@ -1,3 +1,5 @@
+from live_client_api import team_label
+
 MULTIKILL_NAMES = {
     2: "ダブルキル",
     3: "トリプルキル",
@@ -17,7 +19,7 @@ def format_unit_name(name: str | None) -> str | None:
     return name
 
 
-def build_event_commentary(event: dict) -> str | None:
+def build_event_commentary(event: dict, active_team: str | None = None) -> str | None:
     """liveclientdata/eventdataの1イベントから実況セリフを生成する"""
     event_name = event.get("EventName")
     killer = format_unit_name(event.get("KillerName"))
@@ -66,6 +68,7 @@ def build_event_commentary(event: dict) -> str | None:
     if event_name == "Ace":
         acer = event.get("Acer")
         acing_team = event.get("AcingTeam")
-        return f"{acing_team}チームがエースを達成!{acer}が試合を決定づけました!"
+        label = team_label(acing_team.upper() if acing_team else None, active_team)
+        return f"{label}チームがエースを達成!{acer}が試合を決定づけました!"
 
     return None

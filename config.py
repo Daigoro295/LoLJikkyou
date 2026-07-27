@@ -47,3 +47,9 @@ LOW_HP_RECOVER_RATIO = float(os.environ.get("LOW_HP_RECOVER_RATIO", "0.4"))
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 GEMINI_MODEL = os.environ.get("GEMINI_MODEL", "gemini-flash-lite-latest")
 GEMINI_API_URL = f"https://generativelanguage.googleapis.com/v1beta/models/{GEMINI_MODEL}:generateContent"
+
+# 長文化するとVOICEVOXの音声合成が間に合わずタイムアウトするため、LLM実況の長さを制限する
+MAX_COMMENTARY_LENGTH = int(os.environ.get("MAX_COMMENTARY_LENGTH", "60"))
+GEMINI_MAX_OUTPUT_TOKENS = int(os.environ.get("GEMINI_MAX_OUTPUT_TOKENS", "80"))
+
+VOICEVOX_TIMEOUT_SECONDS = float(os.environ.get("VOICEVOX_TIMEOUT_SECONDS", "15"))

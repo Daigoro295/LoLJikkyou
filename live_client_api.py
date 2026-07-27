@@ -106,9 +106,51 @@ def get_player_team(player_name: str | None) -> str | None:
     return player_team_map.get(player_name)
 
 
+def _structure_owner_team(structure_name: str | None) -> str | None:
+    """タレット/インヒビター名(例: Turret_T1_L_03_A)から所有チームを判定する"""
+    if not structure_name:
+        return None
+    if "_T1_" in structure_name:
+        return "ORDER"
+    if "_T2_" in structure_name:
+        return "CHAOS"
+    return None
+
+
 def get_event_actor_team(event: dict) -> str | None:
-    """イベントの主体(キラー等)が所属するチーム("ORDER"/"CHAOS")を取得する"""
-    if event.get("EventName") == "Ace":
+    """イベントの主体(キラー等)が所属するチーム("ORDER"/"CHAOS")を取得する
+
+    タワー/インヒビター破壊はミニオンにトドメを刺されることが多く、その場合
+    KillerNameはミニオンのユニット名でplayer_team_mapに存在せず判定できない。
+    破壊された構造物自身の所属チームから恩恵を受けるチーム(相手チーム)を
+    逆算することで、キラーがミニオンでも正しく判定できるようにする。
+    """
+    event_name = event.get("EventName")
+
+    if event_name == "Ace":
         acing_team = event.get("AcingTeam")
         return acing_team.upper() if acing_team else None
+
+    if event_name in ("TurretKilled", "InhibKilled", "FirstBrick"):
+        structure_name = event.get("TurretKilled") or event.get("InhibKilled")
+        owner_team = _structure_owner_team(structure_name)
+        if owner_team == "ORDER":
+            return "CHAOS"
+        if owner_team == "CHAOS":
+            return "ORDER"
+
     return get_player_team(event.get("KillerName"))
+
+
+def team_label(team: str | None, active_team: str | None) -> str:
+    """チーム識別子("ORDER"/"CHAOS")を視聴者視点の色ラベルに変換する
+
+    実際のORDER/CHAOSに関わらず、視聴者(アクティブプレイヤー)自身のチームは常に
+    「ブルー」、相手チームは常に「レッド」と呼ぶ。自チームが判定できない場合のみ、
+    ゲーム本来の割り当て(ORDER=ブルー/CHAOS=レッド)にフォールバックする。
+    """
+    if not team:
+        return "不明"
+    if active_team is None:
+        return "ブルー" if team == "ORDER" else "レッド"
+    return "ブルー" if team == active_team else "レッド"

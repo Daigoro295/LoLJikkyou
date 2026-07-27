@@ -3,7 +3,7 @@ import urllib.parse
 import urllib.request
 import winsound
 
-from config import CONNECTION_ERRORS, VOICEVOX_BASE_URL, VOICEVOX_SPEAKER_ID
+from config import CONNECTION_ERRORS, VOICEVOX_BASE_URL, VOICEVOX_SPEAKER_ID, VOICEVOX_TIMEOUT_SECONDS
 
 
 def speak(text: str, speaker: int = VOICEVOX_SPEAKER_ID) -> None:
@@ -14,7 +14,7 @@ def speak(text: str, speaker: int = VOICEVOX_SPEAKER_ID) -> None:
         audio_query_request = urllib.request.Request(
             f"{VOICEVOX_BASE_URL}/audio_query?{query}", method="POST"
         )
-        with urllib.request.urlopen(audio_query_request, timeout=10) as response:
+        with urllib.request.urlopen(audio_query_request, timeout=VOICEVOX_TIMEOUT_SECONDS) as response:
             audio_query = json.load(response)
 
         synthesis_request = urllib.request.Request(
@@ -23,7 +23,7 @@ def speak(text: str, speaker: int = VOICEVOX_SPEAKER_ID) -> None:
             headers={"Content-Type": "application/json"},
             method="POST",
         )
-        with urllib.request.urlopen(synthesis_request, timeout=10) as response:
+        with urllib.request.urlopen(synthesis_request, timeout=VOICEVOX_TIMEOUT_SECONDS) as response:
             wav_data = response.read()
     except CONNECTION_ERRORS as e:
         print(f"VOICEVOX APIへの接続に失敗しました(エンジンが起動していない可能性があります): {e}")

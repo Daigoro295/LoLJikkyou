@@ -39,7 +39,7 @@ def run_event_commentary_loop(
         new_events = [e for e in events if e.get("EventID", -1) > last_event_id]
 
         for event in sorted(new_events, key=lambda e: e.get("EventID", 0)):
-            commentary = build_event_commentary(event)
+            commentary = build_event_commentary(event, active_team)
             if commentary:
                 actor_team = get_event_actor_team(event)
                 is_friendly_event = (
@@ -52,7 +52,7 @@ def run_event_commentary_loop(
 
         players = get_player_list()
         if players is not None:
-            for commentary in detect_player_state_changes(players, active_riot_id):
+            for commentary in detect_player_state_changes(players, active_riot_id, active_team):
                 print(f"[状況変化] {commentary}")
                 speak(commentary)
 
