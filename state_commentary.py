@@ -31,8 +31,12 @@ def reset_state() -> None:
     _low_hp_warned = False
 
 
-def _display_name(player: dict) -> str:
-    return player.get("championName") or player.get("summonerName") or "プレイヤー"
+def _display_name(player: dict, is_active: bool) -> str:
+    """実況で読み上げるプレイヤー名。視聴者自身の操作か他プレイヤーかが分かるようにする"""
+    champion_name = player.get("championName") or player.get("summonerName") or "プレイヤー"
+    if is_active:
+        return f"あなたの{champion_name}"
+    return champion_name
 
 
 def _player_key(player: dict) -> str:
@@ -43,13 +47,18 @@ def _player_key(player: dict) -> str:
     return player.get("summonerName") or f"{player.get('championName')}_{player.get('team')}"
 
 
-def detect_player_state_changes(players: list[dict]) -> list[str]:
-    """プレイヤー単位の状況変化(CS到達・節目レベル・高額アイテム購入)を検知する"""
+def detect_player_state_changes(players: list[dict], active_player_key: str | None = None) -> list[str]:
+    """プレイヤー単位の状況変化(CS到達・節目レベル・アイテム購入)を検知する
+
+    アイテム購入はノイズを避けるため通常は高額品のみ実況するが、active_player_keyと
+    一致するプレイヤー(視聴者自身)に限っては金額を問わず全ての非消耗品購入を実況する。
+    """
     comments: list[str] = []
 
     for player in players:
         key = _player_key(player)
-        name = _display_name(player)
+        is_active = key == active_player_key
+        name = _display_name(player, is_active)
         scores = player.get("scores", {})
         level = player.get("level", 1)
         items = player.get("items", [])
@@ -79,8 +88,9 @@ def detect_player_state_changes(players: list[dict]) -> list[str]:
 
         new_item_ids = item_ids - state["item_ids"]
         if new_item_ids:
+            price_threshold = 0 if is_active else ITEM_ANNOUNCE_PRICE_THRESHOLD
             for item in items:
-                if item.get("itemID") in new_item_ids and (item.get("price") or 0) >= ITEM_ANNOUNCE_PRICE_THRESHOLD:
+                if item.get("itemID") in new_item_ids and (item.get("price") or 0) >= price_threshold:
                     comments.append(f"{name}が{item.get('displayName') or 'アイテム'}を購入しました。")
             state["item_ids"] = item_ids
 

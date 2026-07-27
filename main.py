@@ -52,7 +52,7 @@ def run_event_commentary_loop(
 
         players = get_player_list()
         if players is not None:
-            for commentary in detect_player_state_changes(players):
+            for commentary in detect_player_state_changes(players, active_riot_id):
                 print(f"[状況変化] {commentary}")
                 speak(commentary)
 
