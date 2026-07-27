@@ -25,16 +25,28 @@ def run_event_commentary_loop(
     refresh_player_team_map()
     reset_state()
     active_team = get_player_team(active_riot_id)
+    was_connected = True
     print("イベント実況を開始します。終了するにはCtrl+Cを押してください。")
 
     while True:
         events = get_game_events()
         if events is None:
+            if was_connected:
+                # 試合終了(Live Client Data APIへの接続喪失)を検知した瞬間に一度だけ締めの実況を流す
+                print("[GameEnd] グッドゲーム。いい試合でしたね。")
+                speak("グッドゲーム。いい試合でしたね。")
+                was_connected = False
             # 接続失敗時は次の試合でイベントIDが0から振り直されるのに備えてリセットする
             last_event_id = -1
             reset_state()
             time.sleep(POLL_INTERVAL_SECONDS)
             continue
+
+        if not was_connected:
+            # 新しい試合が始まったとみられるため、チーム対応表(自陣/敵陣)を最新化する
+            refresh_player_team_map()
+            active_team = get_player_team(active_riot_id)
+            was_connected = True
 
         new_events = [e for e in events if e.get("EventID", -1) > last_event_id]
 
