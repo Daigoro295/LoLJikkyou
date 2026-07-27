@@ -32,7 +32,7 @@ def enhance_commentary_with_llm(
 
     prompt = (
         f"{bias_instruction}"
-        "以下の試合イベントについて、盛り上がる実況コメントを日本語で生成してください。"
+        "以下の試合イベントについて、盛り上がる短い実況コメントを日本語で生成してください。"
         "前置きや説明文は不要で、実況コメントの本文のみを返してください。\n\n"
         f"イベント種別: {event.get('EventName')}\n"
         f"イベント詳細(JSON): {json.dumps(event, ensure_ascii=False)}\n"
