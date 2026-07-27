@@ -1,13 +1,29 @@
 import json
 import urllib.request
+from collections import deque
 
 from config import (
+    COMMENTARY_HISTORY_SIZE,
     CONNECTION_ERRORS,
     GEMINI_API_KEY,
     GEMINI_API_URL,
     GEMINI_MAX_OUTPUT_TOKENS,
     MAX_COMMENTARY_LENGTH,
 )
+
+# LLMに文脈として渡す、直近に実際に読み上げた実況の履歴(試合の経過)
+_commentary_history: deque[str] = deque(maxlen=COMMENTARY_HISTORY_SIZE)
+
+
+def reset_history() -> None:
+    """新しい試合の開始に備えて実況履歴をクリアする"""
+    _commentary_history.clear()
+
+
+def record_commentary(text: str) -> None:
+    """実際に読み上げた実況を、以降のLLM生成の文脈として履歴に積む"""
+    if text:
+        _commentary_history.append(text)
 
 
 def enhance_commentary_with_llm(
@@ -37,10 +53,19 @@ def enhance_commentary_with_llm(
             "淡々と事実だけを伝える実況にしてください。"
         )
 
+    history_context = ""
+    if _commentary_history:
+        history_lines = "\n".join(f"- {line}" for line in _commentary_history)
+        history_context = (
+            "直近の実況の流れ(参考。話の流れを踏まえつつ、同じ言い回しの繰り返しは避けること):\n"
+            f"{history_lines}\n\n"
+        )
+
     prompt = (
         f"{bias_instruction}"
         f"以下の試合イベントについて、盛り上がる実況コメントを日本語で{MAX_COMMENTARY_LENGTH}字以内の1文だけ生成してください。"
         "音声で読み上げるため長文は厳禁です。前置きや説明文は不要で、実況コメントの本文のみを返してください。\n\n"
+        f"{history_context}"
         f"イベント種別: {event.get('EventName')}\n"
         f"イベント詳細(JSON): {json.dumps(event, ensure_ascii=False)}\n"
         f"参考(テンプレートの実況文): {base_commentary}"
@@ -62,8 +87,10 @@ def enhance_commentary_with_llm(
         with urllib.request.urlopen(request, timeout=10) as response:
             result = json.load(response)
         text = result["candidates"][0]["content"]["parts"][0]["text"].strip()
-        text = text[:MAX_COMMENTARY_LENGTH]
-        return text or base_commentary
+        text = text[:MAX_COMMENTARY_LENGTH] or base_commentary
     except (*CONNECTION_ERRORS, KeyError, IndexError, json.JSONDecodeError) as e:
         print(f"Gemini APIでの実況生成に失敗しました。テンプレートの実況を使用します: {e}")
-        return base_commentary
+        text = base_commentary
+
+    record_commentary(text)
+    return text

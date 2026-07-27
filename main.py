@@ -3,7 +3,7 @@ import time
 
 from commentary import build_event_commentary
 from config import POLL_INTERVAL_SECONDS
-from gemini_client import enhance_commentary_with_llm
+from gemini_client import enhance_commentary_with_llm, record_commentary, reset_history
 from live_client_api import (
     get_active_player_data,
     get_active_player_riot_id,
@@ -24,6 +24,7 @@ def run_event_commentary_loop(
     last_event_id = -1
     refresh_player_team_map()
     reset_state()
+    reset_history()
     active_team = get_player_team(active_riot_id)
     was_connected = True
     print("イベント実況を開始します。終了するにはCtrl+Cを押してください。")
@@ -39,6 +40,7 @@ def run_event_commentary_loop(
             # 接続失敗時は次の試合でイベントIDが0から振り直されるのに備えてリセットする
             last_event_id = -1
             reset_state()
+            reset_history()
             time.sleep(POLL_INTERVAL_SECONDS)
             continue
 
@@ -67,6 +69,7 @@ def run_event_commentary_loop(
             for commentary in detect_player_state_changes(players, active_riot_id, active_team):
                 print(f"[状況変化] {commentary}")
                 speak(commentary)
+                record_commentary(commentary)
 
         active_player = get_active_player_data()
         if active_player is not None:
@@ -74,6 +77,7 @@ def run_event_commentary_loop(
             if low_hp_commentary:
                 print(f"[状況変化] {low_hp_commentary}")
                 speak(low_hp_commentary)
+                record_commentary(low_hp_commentary)
 
         time.sleep(poll_interval)
 
