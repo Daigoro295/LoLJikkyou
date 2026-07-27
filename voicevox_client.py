@@ -30,3 +30,8 @@ def speak(text: str, speaker: int = VOICEVOX_SPEAKER_ID) -> None:
         return
 
     winsound.PlaySound(wav_data, winsound.SND_MEMORY)
+
+
+def play_test_voice() -> None:
+    """LoLクライアント不要でVOICEVOXの動作(接続先・話者ID)を確認するためのテスト音声を再生する"""
+    speak(f"こんにちは、音声テストです。話者IDは{VOICEVOX_SPEAKER_ID}番です。")

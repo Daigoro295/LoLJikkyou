@@ -1,10 +1,11 @@
+import argparse
 import time
 
 from commentary import build_event_commentary
 from config import POLL_INTERVAL_SECONDS
 from gemini_client import enhance_commentary_with_llm
 from live_client_api import get_active_player_riot_id, get_game_events, refresh_player_team_map
-from voicevox_client import speak
+from voicevox_client import play_test_voice, speak
 
 
 def run_event_commentary_loop(poll_interval: float = POLL_INTERVAL_SECONDS) -> None:
@@ -35,6 +36,24 @@ def run_event_commentary_loop(poll_interval: float = POLL_INTERVAL_SECONDS) -> N
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description="LoL実況ツール")
+    parser.add_argument(
+        "--test-voice",
+        action="store_true",
+        help="LoLクライアント不要でVOICEVOXのテスト音声を再生して終了する",
+    )
+    args = parser.parse_args()
+
+    if args.test_voice:
+        print("テスト音声を繰り返し再生します。終了するにはCtrl+Cを押してください。")
+        try:
+            while True:
+                play_test_voice()
+                time.sleep(POLL_INTERVAL_SECONDS)
+        except KeyboardInterrupt:
+            print("テスト音声の再生を終了しました。")
+        return
+
     while True:
         riot_id = get_active_player_riot_id()
         if riot_id:
