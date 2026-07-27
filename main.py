@@ -1,8 +1,10 @@
 import argparse
+import ctypes
 import time
 
 from commentary import build_event_commentary
 from config import POLL_INTERVAL_SECONDS
+from control_panel import launch as launch_control_panel
 from gemini_client import enhance_commentary_with_llm, record_commentary, reset_history
 from live_client_api import (
     get_active_player_data,
@@ -15,6 +17,9 @@ from live_client_api import (
 )
 from state_commentary import detect_low_health, detect_player_state_changes, reset_state
 from voicevox_client import play_test_voice, speak
+
+# OBSのウィンドウキャプチャで見つけやすいよう、コンソールウィンドウのタイトルを固定する
+ctypes.windll.kernel32.SetConsoleTitleW("LoLAI実況ツール")
 
 
 def run_event_commentary_loop(
@@ -85,6 +90,11 @@ def run_event_commentary_loop(
 def main() -> None:
     parser = argparse.ArgumentParser(description="LoL実況ツール")
     parser.add_argument(
+        "--run",
+        action="store_true",
+        help="コントロールパネルを介さず実況ループを直接開始する",
+    )
+    parser.add_argument(
         "--test-voice",
         action="store_true",
         help="LoLクライアント不要でVOICEVOXのテスト音声を再生して終了する",
@@ -101,17 +111,21 @@ def main() -> None:
             print("テスト音声の再生を終了しました。")
         return
 
-    while True:
-        riot_id = get_active_player_riot_id()
-        if riot_id:
-            print(f"ActiveUserのRiot ID: {riot_id}")
-            try:
-                run_event_commentary_loop(active_riot_id=riot_id)
-            except KeyboardInterrupt:
-                print("イベント実況を終了しました。")
-        else:
-            print("Riot IDを取得できませんでした。")
-        time.sleep(POLL_INTERVAL_SECONDS)
+    if args.run:
+        while True:
+            riot_id = get_active_player_riot_id()
+            if riot_id:
+                print(f"ActiveUserのRiot ID: {riot_id}")
+                try:
+                    run_event_commentary_loop(active_riot_id=riot_id)
+                except KeyboardInterrupt:
+                    print("イベント実況を終了しました。")
+            else:
+                print("Riot IDを取得できませんでした。")
+            time.sleep(POLL_INTERVAL_SECONDS)
+
+    # 引数なしの場合はコントロールパネルを開く(exeをダブルクリックした際のデフォルト動作)
+    launch_control_panel()
 
 
 if __name__ == "__main__":
