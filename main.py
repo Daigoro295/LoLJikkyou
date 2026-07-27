@@ -1,5 +1,6 @@
 import http.client
 import json
+import os
 import ssl
 import time
 import urllib.error
@@ -10,15 +11,35 @@ import winsound
 # ゲーム終了時の切断など、urlopen中に発生しうる通信エラー全般
 _CONNECTION_ERRORS = (OSError, http.client.HTTPException)
 
-LIVE_CLIENT_DATA_URL = "https://127.0.0.1:2999/liveclientdata/activeplayer"
-GAME_EVENTS_URL = "https://127.0.0.1:2999/liveclientdata/eventdata"
-ALL_PLAYERS_URL = "https://127.0.0.1:2999/liveclientdata/playerlist"
+
+def _load_env_file(path: str = ".env") -> None:
+    """.envファイルを読み込みos.environに反映する(python-dotenv不使用、標準ライブラリのみ)"""
+    if not os.path.exists(path):
+        return
+
+    with open(path, encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, _, value = line.partition("=")
+            os.environ.setdefault(key.strip(), value.strip())
+
+
+_load_env_file()
+
+LIVE_CLIENT_BASE_URL = os.environ.get("LIVE_CLIENT_BASE_URL", "https://127.0.0.1:2999")
+LIVE_CLIENT_DATA_URL = f"{LIVE_CLIENT_BASE_URL}/liveclientdata/activeplayer"
+GAME_EVENTS_URL = f"{LIVE_CLIENT_BASE_URL}/liveclientdata/eventdata"
+ALL_PLAYERS_URL = f"{LIVE_CLIENT_BASE_URL}/liveclientdata/playerlist"
 
 # LoLのLive Client Data APIは自己署名証明書を使用するため検証をスキップする
 _UNVERIFIED_SSL_CONTEXT = ssl._create_unverified_context()
 
-VOICEVOX_BASE_URL = "http://127.0.0.1:50021"
-VOICEVOX_SPEAKER_ID = 1  # ずんだもん(ノーマル)
+VOICEVOX_BASE_URL = os.environ.get("VOICEVOX_BASE_URL", "http://127.0.0.1:50021")
+VOICEVOX_SPEAKER_ID = int(os.environ.get("VOICEVOX_SPEAKER_ID", "1"))  # ずんだもん(ノーマル)
+
+POLL_INTERVAL_SECONDS = float(os.environ.get("POLL_INTERVAL_SECONDS", "1.0"))
 
 # プレイヤー識別名(summonerName/championName/riotId) -> チーム("ORDER"/"CHAOS")
 player_team_map: dict[str, str] = {}
@@ -195,7 +216,7 @@ def build_event_commentary(event: dict) -> str | None:
     return None
 
 
-def run_event_commentary_loop(poll_interval: float = 1.0) -> None:
+def run_event_commentary_loop(poll_interval: float = POLL_INTERVAL_SECONDS) -> None:
     """試合イベントをポーリングし、新しく発生したイベントごとに音声実況を流す"""
     last_event_id = -1
     refresh_player_team_map()
@@ -206,7 +227,7 @@ def run_event_commentary_loop(poll_interval: float = 1.0) -> None:
         if events is None:
             # 接続失敗時は次の試合でイベントIDが0から振り直されるのに備えてリセットする
             last_event_id = -1
-            time.sleep(1)
+            time.sleep(POLL_INTERVAL_SECONDS)
             continue
 
         new_events = [e for e in events if e.get("EventID", -1) > last_event_id]
@@ -233,4 +254,4 @@ if __name__ == "__main__":
                 print("イベント実況を終了しました。")
         else:
             print("Riot IDを取得できませんでした。")
-        time.sleep(1.0)
+        time.sleep(POLL_INTERVAL_SECONDS)
