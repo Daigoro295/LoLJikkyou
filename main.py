@@ -57,7 +57,7 @@ def run_event_commentary_loop(
                 is_friendly_event = (
                     None if active_team is None or actor_team is None else actor_team == active_team
                 )
-                commentary = enhance_commentary_with_llm(event, commentary, active_riot_id, is_friendly_event)
+                commentary = enhance_commentary_with_llm(event, commentary, is_friendly_event)
                 print(f"[{event.get('EventName')}] {commentary}")
                 speak(commentary)
             last_event_id = max(last_event_id, event.get("EventID", last_event_id))
