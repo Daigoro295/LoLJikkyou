@@ -106,6 +106,17 @@ def get_player_team(player_name: str | None) -> str | None:
     return player_team_map.get(player_name)
 
 
+def get_team_compositions(players: list[dict]) -> dict[str, list[str]]:
+    """AllPlayerのプレイヤー一覧から、チームごとのチャンピオン構成を取得する"""
+    compositions: dict[str, list[str]] = {"ORDER": [], "CHAOS": []}
+    for player in players:
+        team = player.get("team")
+        champion_name = player.get("championName")
+        if team in compositions and champion_name:
+            compositions[team].append(champion_name)
+    return compositions
+
+
 def _structure_owner_team(structure_name: str | None) -> str | None:
     """タレット/インヒビター名(例: Turret_T1_L_03_A)から所有チームを判定する"""
     if not structure_name:

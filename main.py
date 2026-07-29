@@ -5,7 +5,12 @@ import time
 from commentary import build_event_commentary
 from config import POLL_INTERVAL_SECONDS
 from control_panel import launch as launch_control_panel
-from gemini_client import enhance_commentary_with_llm, record_commentary, reset_history
+from gemini_client import (
+    enhance_commentary_with_llm,
+    generate_team_matchup_commentary,
+    record_commentary,
+    reset_history,
+)
 from live_client_api import (
     get_active_player_data,
     get_active_player_riot_id,
@@ -13,6 +18,7 @@ from live_client_api import (
     get_game_events,
     get_player_list,
     get_player_team,
+    get_team_compositions,
     refresh_player_team_map,
 )
 from state_commentary import detect_low_health, detect_player_state_changes, reset_state
@@ -32,6 +38,17 @@ def run_event_commentary_loop(
     reset_history()
     active_team = get_player_team(active_riot_id)
     was_connected = True
+
+    players = get_player_list()
+    if players is not None:
+        compositions = get_team_compositions(players)
+        matchup_commentary = generate_team_matchup_commentary(
+            compositions["ORDER"], compositions["CHAOS"], active_team
+        )
+        if matchup_commentary:
+            print(f"[チーム相性] {matchup_commentary}")
+            speak(matchup_commentary)
+
     print("イベント実況を開始します。終了するにはCtrl+Cを押してください。")
 
     while True:

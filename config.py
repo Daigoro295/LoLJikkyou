@@ -53,5 +53,9 @@ GEMINI_MAX_OUTPUT_TOKENS = int(os.environ.get("GEMINI_MAX_OUTPUT_TOKENS", "80"))
 
 VOICEVOX_TIMEOUT_SECONDS = float(os.environ.get("VOICEVOX_TIMEOUT_SECONDS", "15"))
 
+# 試合開始時、両チームの構成(相性)をAIに解説してもらう際の長さ制限
+TEAM_MATCHUP_MAX_LENGTH = int(os.environ.get("TEAM_MATCHUP_MAX_LENGTH", "150"))
+TEAM_MATCHUP_MAX_OUTPUT_TOKENS = int(os.environ.get("TEAM_MATCHUP_MAX_OUTPUT_TOKENS", "200"))
+
 # LLMに渡す直近の実況履歴(試合の経過)として保持する件数
 COMMENTARY_HISTORY_SIZE = int(os.environ.get("COMMENTARY_HISTORY_SIZE", "8"))

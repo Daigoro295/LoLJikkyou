@@ -9,6 +9,8 @@ from config import (
     GEMINI_API_URL,
     GEMINI_MAX_OUTPUT_TOKENS,
     MAX_COMMENTARY_LENGTH,
+    TEAM_MATCHUP_MAX_LENGTH,
+    TEAM_MATCHUP_MAX_OUTPUT_TOKENS,
 )
 
 # LLMに文脈として渡す、直近に実際に読み上げた実況の履歴(試合の経過)
@@ -91,6 +93,60 @@ def enhance_commentary_with_llm(
     except (*CONNECTION_ERRORS, KeyError, IndexError, json.JSONDecodeError) as e:
         print(f"Gemini APIでの実況生成に失敗しました。テンプレートの実況を使用します: {e}")
         text = base_commentary
+
+    record_commentary(text)
+    return text
+
+
+def generate_team_matchup_commentary(
+    order_champions: list[str], chaos_champions: list[str], active_team: str | None
+) -> str | None:
+    """試合開始時、両チームの構成をAIに送って相性や試合展開の見どころを解説してもらう
+
+    未設定/失敗時、あるいはチャンピオン情報が揃っていない場合はNoneを返す(テンプレート実況が
+    存在しない特殊コメントのため、他のコメントと異なりフォールバック文言は用意しない)。
+    """
+    if not GEMINI_API_KEY or not order_champions or not chaos_champions:
+        return None
+
+    # 視聴者視点で常にブルー=自チーム、レッド=敵チームとして解説させる(team_labelの規則に合わせる)
+    if active_team == "CHAOS":
+        blue_team, red_team = chaos_champions, order_champions
+    else:
+        blue_team, red_team = order_champions, chaos_champions
+
+    prompt = (
+        "あなたはLeague of Legendsの試合開始前に両チームの構成を解説する実況アナウンサーです。"
+        "視聴者はブルーチームを応援しています。\n\n"
+        f"ブルーチームの構成: {', '.join(blue_team)}\n"
+        f"レッドチームの構成: {', '.join(red_team)}\n\n"
+        "この構成同士の相性(有利不利)や試合展開の見どころを、日本語で"
+        f"{TEAM_MATCHUP_MAX_LENGTH}字以内の自然な話し言葉で解説してください。"
+        "音声で読み上げるため、箇条書きや記号、前置きは使わず本文のみを返してください。"
+    )
+    body = json.dumps(
+        {
+            "contents": [{"parts": [{"text": prompt}]}],
+            "generationConfig": {"maxOutputTokens": TEAM_MATCHUP_MAX_OUTPUT_TOKENS},
+        }
+    ).encode("utf-8")
+
+    try:
+        request = urllib.request.Request(
+            f"{GEMINI_API_URL}?key={GEMINI_API_KEY}",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        with urllib.request.urlopen(request, timeout=15) as response:
+            result = json.load(response)
+        text = result["candidates"][0]["content"]["parts"][0]["text"].strip()[:TEAM_MATCHUP_MAX_LENGTH]
+    except (*CONNECTION_ERRORS, KeyError, IndexError, json.JSONDecodeError) as e:
+        print(f"Gemini APIでのチーム相性分析に失敗しました: {e}")
+        return None
+
+    if not text:
+        return None
 
     record_commentary(text)
     return text

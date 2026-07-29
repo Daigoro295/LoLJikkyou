@@ -47,6 +47,15 @@ FIELD_GROUPS: list[tuple[str, list[tuple[str, str, str, type, str, bool]]]] = [
             ("MAX_COMMENTARY_LENGTH", "実況の最大文字数", "60", int, "音声合成のタイムアウト対策", False),
             ("GEMINI_MAX_OUTPUT_TOKENS", "Gemini出力トークン上限", "80", int, "", False),
             ("COMMENTARY_HISTORY_SIZE", "実況履歴の保持件数", "8", int, "LLMに渡す直近の実況の件数", False),
+            (
+                "TEAM_MATCHUP_MAX_LENGTH",
+                "チーム相性解説の最大文字数",
+                "150",
+                int,
+                "試合開始時の両チーム構成解説",
+                False,
+            ),
+            ("TEAM_MATCHUP_MAX_OUTPUT_TOKENS", "チーム相性解説の出力トークン上限", "200", int, "", False),
         ],
     ),
     (

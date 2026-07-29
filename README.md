@@ -1,6 +1,6 @@
 # LoLJikkyou
 
-League of Legendsの試合を、VOICEVOXによる音声とGemini APIによるAI実況でリアルタイムに実況するツールです。Live Client Data API(LoLクライアントがローカルに公開しているAPI)をポーリングし、キル・タワー破壊・ドラゴン討伐などのイベントやCS/レベルといった状況変化を検知して読み上げます。
+League of Legendsの試合を、VOICEVOXによる音声とGemini APIによるAI実況でリアルタイムに実況するツールです。Live Client Data API(LoLクライアントがローカルに公開しているAPI)をポーリングし、キル・タワー破壊・ドラゴン討伐などのイベントやCS/レベルといった状況変化を検知して読み上げます。試合開始時にはGemini APIキー設定時に限り、両チームのチャンピオン構成をAIに送って相性・見どころを解説させます。
 
 対応OSはWindowsのみです(VOICEVOX連携に`winsound`、コンソール制御に`ctypes.windll`を使用しているため)。
 
@@ -76,6 +76,8 @@ python main.py --test-voice   # LoLクライアント不要でVOICEVOXのテス�
 | `MAX_COMMENTARY_LENGTH` | `60` | 実況の最大文字数。長文化するとVOICEVOXの音声合成が間に合わずタイムアウトするための制限 |
 | `GEMINI_MAX_OUTPUT_TOKENS` | `80` | Gemini APIの出力トークン上限 |
 | `COMMENTARY_HISTORY_SIZE` | `8` | LLMに文脈として渡す、直近の実況履歴の保持件数 |
+| `TEAM_MATCHUP_MAX_LENGTH` | `150` | 試合開始時のチーム構成(相性)解説の最大文字数 |
+| `TEAM_MATCHUP_MAX_OUTPUT_TOKENS` | `200` | チーム構成解説を生成する際のGemini APIの出力トークン上限 |
 
 ### 状況変化の実況しきい値
 
