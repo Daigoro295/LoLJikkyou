@@ -53,7 +53,6 @@ FIELD_GROUPS: list[tuple[str, list[tuple[str, str, str, type, str, bool]]]] = [
         "状況変化の実況しきい値",
         [
             ("CS_MILESTONE_STEP", "CS実況の間隔", "50", int, "", False),
-            ("ITEM_ANNOUNCE_PRICE_THRESHOLD", "アイテム購入実況の金額しきい値(G)", "2600", int, "", False),
             ("KILL_GAP_ALERT_STEP", "キル差実況の間隔", "3", int, "", False),
             ("LOW_HP_RATIO", "HP危険域とみなす割合", "0.25", float, "0.0〜1.0", False),
             ("LOW_HP_RECOVER_RATIO", "HP警告を解除する割合", "0.4", float, "0.0〜1.0", False),

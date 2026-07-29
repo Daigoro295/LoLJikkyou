@@ -1,14 +1,13 @@
 """Live Client Data APIのEventsに現れない状況変化を検知し、実況コメントを生成する。
 
-Eventsはキル・タワー破壊などの離散イベントのみを含み、CS・レベル・アイテム購入と
-いった地道な状況変化は含まれない。本モジュールはplayerlist/activeplayerのスナップ
-ショットを前回分と比較し、節目となる変化のみをコメント化する(全ての変化を拾うと
-喋りすぎるため、閾値やヒステリシスで間引く)。
+Eventsはキル・タワー破壊などの離散イベントのみを含み、CS・レベルといった地道な
+状況変化は含まれない。本モジュールはplayerlist/activeplayerのスナップショットを
+前回分と比較し、節目となる変化のみをコメント化する(全ての変化を拾うと喋りすぎる
+ため、閾値やヒステリシスで間引く)。
 """
 
 from config import (
     CS_MILESTONE_STEP,
-    ITEM_ANNOUNCE_PRICE_THRESHOLD,
     KILL_GAP_ALERT_STEP,
     LOW_HP_RATIO,
     LOW_HP_RECOVER_RATIO,
@@ -49,11 +48,7 @@ def _player_key(player: dict) -> str:
 def detect_player_state_changes(
     players: list[dict], active_player_key: str | None = None, active_team: str | None = None
 ) -> list[str]:
-    """プレイヤー単位の状況変化(CS到達・節目レベル・アイテム購入)を検知する
-
-    アイテム購入はノイズを避けるため通常は高額品のみ実況するが、active_player_keyと
-    一致するプレイヤー(視聴者自身)に限っては金額を問わず全ての非消耗品購入を実況する。
-    """
+    """プレイヤー単位の状況変化(CS到達・節目レベル)を検知する"""
     comments: list[str] = []
 
     for player in players:
@@ -62,8 +57,6 @@ def detect_player_state_changes(
         name = _display_name(player, is_active)
         scores = player.get("scores", {})
         level = player.get("level", 1)
-        items = player.get("items", [])
-        item_ids = {item.get("itemID") for item in items if not item.get("consumable")}
 
         state = _player_state.get(key)
         if state is None:
@@ -71,7 +64,6 @@ def detect_player_state_changes(
             _player_state[key] = {
                 "cs_milestone": (scores.get("creepScore", 0) // CS_MILESTONE_STEP) * CS_MILESTONE_STEP,
                 "level": level,
-                "item_ids": item_ids,
             }
             continue
 
@@ -86,14 +78,6 @@ def detect_player_state_changes(
                 if reached in NOTABLE_LEVELS:
                     comments.append(f"{name}がレベル{reached}になりました!")
             state["level"] = level
-
-        new_item_ids = item_ids - state["item_ids"]
-        if new_item_ids:
-            price_threshold = 0 if is_active else ITEM_ANNOUNCE_PRICE_THRESHOLD
-            for item in items:
-                if item.get("itemID") in new_item_ids and (item.get("price") or 0) >= price_threshold:
-                    comments.append(f"{name}が{item.get('displayName') or 'アイテム'}を購入しました。")
-            state["item_ids"] = item_ids
 
     comments.extend(_detect_kill_gap(players, active_team))
     return comments

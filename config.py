@@ -35,10 +35,9 @@ VOICEVOX_SPEAKER_ID = int(os.environ.get("VOICEVOX_SPEAKER_ID", "1"))  # ずん�
 
 POLL_INTERVAL_SECONDS = float(os.environ.get("POLL_INTERVAL_SECONDS", "1.0"))
 
-# Eventsに現れない状況変化(CS/レベル/アイテム/キル差/HP)を実況するための閾値
+# Eventsに現れない状況変化(CS/レベル/キル差/HP)を実況するための閾値
 CS_MILESTONE_STEP = int(os.environ.get("CS_MILESTONE_STEP", "50"))
 NOTABLE_LEVELS = {6, 11, 16, 18}  # アルティメット習得・最大レベルなど節目のレベルのみ実況する
-ITEM_ANNOUNCE_PRICE_THRESHOLD = int(os.environ.get("ITEM_ANNOUNCE_PRICE_THRESHOLD", "2600"))
 KILL_GAP_ALERT_STEP = int(os.environ.get("KILL_GAP_ALERT_STEP", "3"))
 LOW_HP_RATIO = float(os.environ.get("LOW_HP_RATIO", "0.25"))
 LOW_HP_RECOVER_RATIO = float(os.environ.get("LOW_HP_RECOVER_RATIO", "0.4"))

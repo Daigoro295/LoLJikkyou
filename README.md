@@ -1,6 +1,6 @@
 # LoLJikkyou
 
-League of Legendsの試合を、VOICEVOXによる音声とGemini APIによるAI実況でリアルタイムに実況するツールです。Live Client Data API(LoLクライアントがローカルに公開しているAPI)をポーリングし、キル・タワー破壊・ドラゴン討伐などのイベントやCS/レベル/アイテム購入といった状況変化を検知して読み上げます。
+League of Legendsの試合を、VOICEVOXによる音声とGemini APIによるAI実況でリアルタイムに実況するツールです。Live Client Data API(LoLクライアントがローカルに公開しているAPI)をポーリングし、キル・タワー破壊・ドラゴン討伐などのイベントやCS/レベルといった状況変化を検知して読み上げます。
 
 対応OSはWindowsのみです(VOICEVOX連携に`winsound`、コンソール制御に`ctypes.windll`を使用しているため)。
 
@@ -79,12 +79,11 @@ python main.py --test-voice   # LoLクライアント不要でVOICEVOXのテス�
 
 ### 状況変化の実況しきい値
 
-Live Client Data APIの`Events`に現れない、CS・レベル・アイテム購入・キル差・HPなどの状況変化を実況するための閾値です。
+Live Client Data APIの`Events`に現れない、CS・レベル・キル差・HPなどの状況変化を実況するための閾値です。
 
 | キー | 既定値 | 説明 |
 | --- | --- | --- |
 | `CS_MILESTONE_STEP` | `50` | この数のCSに到達するごとに実況(全プレイヤー対象) |
-| `ITEM_ANNOUNCE_PRICE_THRESHOLD` | `2600` | この金額(G)以上のアイテム購入を実況(他プレイヤー対象。アクティブユーザー自身は金額を問わず全ての非消耗品購入を実況) |
 | `KILL_GAP_ALERT_STEP` | `3` | チーム間のキル差がこの数刻みで増えるごとに実況 |
 | `LOW_HP_RATIO` | `0.25` | アクティブユーザーのHPがこの割合以下になったら危険域として警告 |
 | `LOW_HP_RECOVER_RATIO` | `0.4` | HP警告を解除する割合(ヒステリシス。連続警告を防ぐため) |
